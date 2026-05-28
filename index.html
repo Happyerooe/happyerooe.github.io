@@ -1,249 +1,773 @@
-
-<link rel="stylesheet"
-href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
-<script language="javascript">
-  function isInternetExplorer() {
-    ua = navigator.userAgent;
-    /* MSIE used to detect old browsers and Trident used to newer ones*/
-    return ua.indexOf("MSIE ") > -1 || ua.indexOf("Trident/") > -1;
-  }
-
-  /* Define the Animation class */
-  function Animation(frames, img_id, slider_id, interval, loop_select_id){
-    this.img_id = img_id;
-    this.slider_id = slider_id;
-    this.loop_select_id = loop_select_id;
-    this.interval = interval;
-    this.current_frame = 0;
-    this.direction = 0;
-    this.timer = null;
-    this.frames = new Array(frames.length);
-
-    for (var i=0; i<frames.length; i++)
-    {
-     this.frames[i] = new Image();
-     this.frames[i].src = frames[i];
-    }
-    var slider = document.getElementById(this.slider_id);
-    slider.max = this.frames.length - 1;
-    if (isInternetExplorer()) {
-        // switch from oninput to onchange because IE <= 11 does not conform
-        // with W3C specification. It ignores oninput and onchange behaves
-        // like oninput. In contrast, Microsoft Edge behaves correctly.
-        slider.setAttribute('onchange', slider.getAttribute('oninput'));
-        slider.setAttribute('oninput', null);
-    }
-    this.set_frame(this.current_frame);
-  }
-
-  Animation.prototype.get_loop_state = function(){
-    var button_group = document[this.loop_select_id].state;
-    for (var i = 0; i < button_group.length; i++) {
-        var button = button_group[i];
-        if (button.checked) {
-            return button.value;
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>🏁 闻到先后，知道不知 · 密语祝福竞速场</title>
+    <!-- Font Awesome (竞速图控件所需) -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+    <style>
+        /* ========== 全局样式 & 加密留言板融合氛围 ========== */
+        :root {
+            --bg: #f5f0eb;
+            --card-bg: #ffffff;
+            --primary: #5b7b94;
+            --primary-light: #7fa3b8;
+            --accent: #c0846a;
+            --gold: #b8936e;
+            --text: #3d3a37;
+            --text-light: #6b6560;
+            --border: #e5ded6;
+            --shadow: 0 4px 20px rgba(0,0,0,0.06);
+            --shadow-lg: 0 12px 40px rgba(0,0,0,0.1);
+            --radius: 18px;
+            --radius-sm: 10px;
+            --transition: 0.3s cubic-bezier(0.4,0,0.2,1);
+            --green: #5b8a6f;
+            --red: #b85450;
         }
-    }
-    return undefined;
-  }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Segoe UI','PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif;
+            background: linear-gradient(160deg, #f5f0eb 0%, #ede4d8 30%, #f0e8dd 60%, #f8f4ef 100%);
+            background-attachment: fixed;
+            min-height:100vh; 
+            display:flex; 
+            flex-direction: column;
+            align-items:center; 
+            justify-content:center;
+            padding:20px; 
+            position:relative; 
+            overflow-x:hidden;
+        }
+        body::before, body::after {
+            content:''; position:fixed; border-radius:50%; pointer-events:none; z-index:0;
+        }
+        body::before {
+            top:-180px; right:-120px; width:500px; height:500px;
+            background: radial-gradient(circle, rgba(184,147,110,0.08) 0%, transparent 70%);
+        }
+        body::after {
+            bottom:-150px; left:-100px; width:450px; height:450px;
+            background: radial-gradient(circle, rgba(91,123,148,0.07) 0%, transparent 70%);
+        }
 
-  Animation.prototype.set_frame = function(frame){
-    this.current_frame = frame;
-    document.getElementById(this.img_id).src =
-            this.frames[this.current_frame].src;
-    document.getElementById(this.slider_id).value = this.current_frame;
-  }
+        /* 主容器宽度统一 */
+        .main-container, .race-section, .container {
+            width:100%;
+            max-width:620px;
+            margin-left:auto;
+            margin-right:auto;
+        }
+        .race-section {
+            margin-bottom: 28px;
+            position: relative;
+            z-index: 2;
+        }
+        .container {
+            position: relative;
+            z-index: 2;
+        }
 
-  Animation.prototype.next_frame = function()
-  {
-    this.set_frame(Math.min(this.frames.length - 1, this.current_frame + 1));
-  }
+        /* 竞速图卡片样式 (融合卡片氛围) */
+        .race-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px 22px 28px 22px;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .race-card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+        .race-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #b8936e, #c0846a, #7fa3b8);
+            border-radius: 3px 3px 0 0;
+            opacity: 0.7;
+        }
+        .race-title {
+            text-align: center;
+            margin-bottom: 18px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: 0.02em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .race-title span:first-child {
+            font-size: 1.8rem;
+        }
+        .race-sub {
+            text-align: center;
+            color: var(--text-light);
+            font-size: 0.8rem;
+            margin-top: -8px;
+            margin-bottom: 18px;
+            border-bottom: 1px dashed var(--border);
+            padding-bottom: 12px;
+        }
 
-  Animation.prototype.previous_frame = function()
-  {
-    this.set_frame(Math.max(0, this.current_frame - 1));
-  }
+        /* 竞速图动画专用样式 */
+        .animation {
+            display: inline-block;
+            text-align: center;
+            width: 100%;
+        }
+        .animation img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            background: #fef8f0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        input[type=range].anim-slider {
+            width: 100%;
+            max-width: 500px;
+            margin: 12px auto 8px;
+            display: block;
+        }
+        .anim-buttons {
+            margin: 12px 0px 8px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+        }
+        .anim-buttons button {
+            padding: 0;
+            width: 38px;
+            height: 38px;
+            border-radius: 30px;
+            background: #f4efe8;
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .anim-buttons button:hover {
+            background: var(--primary-light);
+            color: white;
+            border-color: var(--primary-light);
+        }
+        .anim-state {
+            margin-top: 8px;
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            background: #faf7f2;
+            padding: 8px 12px;
+            border-radius: 40px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .anim-state label {
+            margin-right: 4px;
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+        .anim-state input {
+            margin: 0;
+            vertical-align: middle;
+        }
+        @media (max-width:560px) {
+            .anim-buttons button {
+                width: 34px;
+                height: 34px;
+                font-size: 0.9rem;
+            }
+            .anim-state label {
+                font-size: 0.75rem;
+            }
+            .race-card {
+                padding: 18px 14px 22px;
+            }
+        }
 
-  Animation.prototype.first_frame = function()
-  {
-    this.set_frame(0);
-  }
+        /* 加密留言板原始样式增强 */
+        .header { text-align:center; margin-bottom:28px; }
+        .header .icon { font-size:48px; display:block; margin-bottom:6px; animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-10px); } }
+        .header h1 { font-size:1.8rem; font-weight:700; color:var(--text); letter-spacing:0.03em; }
+        .header .subtitle { font-size:0.9rem; color:var(--text-light); margin-top:4px; }
+        .card {
+            background:var(--card-bg); border-radius:var(--radius); box-shadow:var(--shadow);
+            padding:28px 26px; margin-bottom:20px; border:1px solid var(--border); transition:var(--transition);
+            position:relative; overflow:hidden;
+        }
+        .card:hover { box-shadow:var(--shadow-lg); }
+        .card::after {
+            content:''; position:absolute; top:0; left:0; right:0; height:3px;
+            background: linear-gradient(90deg, var(--primary-light), var(--accent), var(--gold));
+            border-radius:3px 3px 0 0; opacity:0.6;
+        }
+        .tabs { display:flex; gap:6px; margin-bottom:24px; background:#f8f5f1; border-radius:28px; padding:5px; }
+        .tab-btn {
+            flex:1; padding:12px 18px; border:none; background:transparent; border-radius:24px;
+            cursor:pointer; font-size:0.95rem; font-weight:500; color:var(--text-light);
+            transition:var(--transition); white-space:nowrap; letter-spacing:0.02em;
+        }
+        .tab-btn.active { background:#fff; color:var(--primary); font-weight:600; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+        .panel { display:none; animation: fadeSlideIn 0.4s ease; }
+        .panel.active { display:block; }
+        @keyframes fadeSlideIn { from{ opacity:0; transform:translateY(12px); } to{ opacity:1; transform:translateY(0); } }
+        .form-group { margin-bottom:16px; }
+        .form-group label { display:block; font-weight:600; font-size:0.88rem; color:var(--text); margin-bottom:6px; }
+        input[type="text"], textarea, input[type="password"] {
+            width:100%; padding:13px 16px; border:2px solid var(--border); border-radius:var(--radius-sm);
+            font-size:1rem; font-family:inherit; color:var(--text); background:#fdfcf9;
+            transition:var(--transition); outline:none;
+        }
+        input:focus, textarea:focus { border-color:var(--primary-light); box-shadow:0 0 0 4px rgba(91,123,148,0.08); background:#fff; }
+        textarea { resize:vertical; min-height:100px; max-height:200px; line-height:1.6; }
+        .char-count { text-align:right; font-size:0.78rem; color:var(--text-light); margin-top:4px; }
+        .btn {
+            display:inline-flex; align-items:center; justify-content:center; gap:8px;
+            padding:13px 28px; border:none; border-radius:28px; font-size:1rem; font-weight:600;
+            cursor:pointer; letter-spacing:0.03em; transition:var(--transition); width:100%;
+        }
+        .btn-primary { background:var(--primary); color:#fff; box-shadow:0 4px 14px rgba(91,123,148,0.3); }
+        .btn-primary:hover { background:#4e6d83; transform:translateY(-1px); }
+        .btn-outline { background:#fff; color:var(--primary); border:2px solid var(--primary-light); width:auto; }
+        .btn-sm { padding:8px 16px; font-size:0.85rem; width:auto; border-radius:20px; }
+        .btn:disabled { opacity:0.5; cursor:not-allowed; pointer-events:none; }
+        .result-area { margin-top:20px; animation: fadeSlideIn 0.5s ease; }
+        .result-card {
+            background:#fdfcf9; border:1px solid var(--border); border-radius:var(--radius-sm);
+            padding:18px 20px; margin-bottom:12px; position:relative; transition:var(--transition);
+            word-break:break-all;
+        }
+        .result-card.preset {
+            border-left:4px solid var(--gold);
+            background: linear-gradient(135deg, #fefaf5 0%, #fdf8f2 100%);
+        }
+        .result-card.preset::before {
+            content:'⭐ 专属留言'; position:absolute; top:-11px; left:16px;
+            background:var(--gold); color:#fff; font-size:0.72rem; font-weight:700;
+            padding:3px 10px; border-radius:10px;
+        }
+        .result-card.user-message { border-left:4px solid var(--primary-light); }
+        .result-card .msg-from { font-size:0.8rem; color:var(--text-light); margin-bottom:6px; font-weight:500; }
+        .result-card .cipher-text {
+            font-family:'Courier New', monospace; background:#f4f0eb; padding:10px;
+            border-radius:8px; font-size:0.85rem; color:#2d2a26; margin:8px 0; word-break:break-all;
+            user-select:all;
+        }
+        .result-card .msg-time { font-size:0.75rem; color:#b5afa8; margin-top:8px; }
+        .copy-btn {
+            background:none; border:1px solid var(--border); border-radius:6px;
+            padding:4px 10px; font-size:0.75rem; cursor:pointer; color:var(--text-light);
+            margin-left:8px; transition:0.2s;
+        }
+        .copy-btn:hover { background:#f0ebe2; border-color:#c0b6a8; }
+        .no-result { text-align:center; padding:30px 20px; color:var(--text-light); font-size:0.95rem; background: #fefcf9; border-radius: 24px; margin-top: 8px; }
+        .no-result .emoji { font-size: 2.2rem; display: block; margin-bottom: 12px; }
+        .toast {
+            position:fixed; top:20px; left:50%; transform:translateX(-50%) translateY(-120px);
+            background:#3d3a37; color:#fff; padding:12px 24px; border-radius:30px;
+            font-size:0.9rem; font-weight:500; z-index:1000;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events:none; box-shadow:0 8px 30px rgba(0,0,0,0.2);
+        }
+        .toast.show { transform:translateX(-50%) translateY(0); }
+        .toast.success { background:var(--green); }
+        .toast.error { background:var(--red); }
+        .footer-note { text-align:center; font-size:0.75rem; color:#bfb9b1; margin-top:16px; line-height:1.6; }
+        .decrypt-card { background:#fdfaf5; border:2px dashed var(--gold); }
+        .decrypt-card::after { background: linear-gradient(90deg, var(--gold), var(--accent)); }
+        @media (max-width:480px) {
+            .card { padding:20px 16px; border-radius:14px; }
+            .header h1 { font-size:1.5rem; }
+            .tab-btn { font-size:0.82rem; padding:10px 12px; }
+        }
+    </style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
 
-  Animation.prototype.last_frame = function()
-  {
-    this.set_frame(this.frames.length - 1);
-  }
-
-  Animation.prototype.slower = function()
-  {
-    this.interval /= 0.7;
-    if(this.direction > 0){this.play_animation();}
-    else if(this.direction < 0){this.reverse_animation();}
-  }
-
-  Animation.prototype.faster = function()
-  {
-    this.interval *= 0.7;
-    if(this.direction > 0){this.play_animation();}
-    else if(this.direction < 0){this.reverse_animation();}
-  }
-
-  Animation.prototype.anim_step_forward = function()
-  {
-    this.current_frame += 1;
-    if(this.current_frame < this.frames.length){
-      this.set_frame(this.current_frame);
-    }else{
-      var loop_state = this.get_loop_state();
-      if(loop_state == "loop"){
-        this.first_frame();
-      }else if(loop_state == "reflect"){
-        this.last_frame();
-        this.reverse_animation();
-      }else{
-        this.pause_animation();
-        this.last_frame();
-      }
-    }
-  }
-
-  Animation.prototype.anim_step_reverse = function()
-  {
-    this.current_frame -= 1;
-    if(this.current_frame >= 0){
-      this.set_frame(this.current_frame);
-    }else{
-      var loop_state = this.get_loop_state();
-      if(loop_state == "loop"){
-        this.last_frame();
-      }else if(loop_state == "reflect"){
-        this.first_frame();
-        this.play_animation();
-      }else{
-        this.pause_animation();
-        this.first_frame();
-      }
-    }
-  }
-
-  Animation.prototype.pause_animation = function()
-  {
-    this.direction = 0;
-    if (this.timer){
-      clearInterval(this.timer);
-      this.timer = null;
-    }
-  }
-
-  Animation.prototype.play_animation = function()
-  {
-    this.pause_animation();
-    this.direction = 1;
-    var t = this;
-    if (!this.timer) this.timer = setInterval(function() {
-        t.anim_step_forward();
-    }, this.interval);
-  }
-
-  Animation.prototype.reverse_animation = function()
-  {
-    this.pause_animation();
-    this.direction = -1;
-    var t = this;
-    if (!this.timer) this.timer = setInterval(function() {
-        t.anim_step_reverse();
-    }, this.interval);
-  }
-</script>
-
-<style>
-.animation {
-    display: inline-block;
-    text-align: center;
-}
-input[type=range].anim-slider {
-    width: 374px;
-    margin-left: auto;
-    margin-right: auto;
-}
-.anim-buttons {
-    margin: 8px 0px;
-}
-.anim-buttons button {
-    padding: 0;
-    width: 36px;
-}
-.anim-state label {
-    margin-right: 8px;
-}
-.anim-state input {
-    margin: 0;
-    vertical-align: middle;
-}
-</style>
-
-<div class="animation">
-  <img id="_anim_img600002a7d6d541a9825b8efb3e495ea3">
-  <div class="anim-controls">
-    <input id="_anim_slider600002a7d6d541a9825b8efb3e495ea3" type="range" class="anim-slider"
-           name="points" min="0" max="1" step="1" value="0"
-           oninput="anim600002a7d6d541a9825b8efb3e495ea3.set_frame(parseInt(this.value));">
-    <div class="anim-buttons">
-      <button title="Decrease speed" aria-label="Decrease speed" onclick="anim600002a7d6d541a9825b8efb3e495ea3.slower()">
-          <i class="fa fa-minus"></i></button>
-      <button title="First frame" aria-label="First frame" onclick="anim600002a7d6d541a9825b8efb3e495ea3.first_frame()">
-        <i class="fa fa-fast-backward"></i></button>
-      <button title="Previous frame" aria-label="Previous frame" onclick="anim600002a7d6d541a9825b8efb3e495ea3.previous_frame()">
-          <i class="fa fa-step-backward"></i></button>
-      <button title="Play backwards" aria-label="Play backwards" onclick="anim600002a7d6d541a9825b8efb3e495ea3.reverse_animation()">
-          <i class="fa fa-play fa-flip-horizontal"></i></button>
-      <button title="Pause" aria-label="Pause" onclick="anim600002a7d6d541a9825b8efb3e495ea3.pause_animation()">
-          <i class="fa fa-pause"></i></button>
-      <button title="Play" aria-label="Play" onclick="anim600002a7d6d541a9825b8efb3e495ea3.play_animation()">
-          <i class="fa fa-play"></i></button>
-      <button title="Next frame" aria-label="Next frame" onclick="anim600002a7d6d541a9825b8efb3e495ea3.next_frame()">
-          <i class="fa fa-step-forward"></i></button>
-      <button title="Last frame" aria-label="Last frame" onclick="anim600002a7d6d541a9825b8efb3e495ea3.last_frame()">
-          <i class="fa fa-fast-forward"></i></button>
-      <button title="Increase speed" aria-label="Increase speed" onclick="anim600002a7d6d541a9825b8efb3e495ea3.faster()">
-          <i class="fa fa-plus"></i></button>
+<!-- ========= 1. 竞速图区块 (动态帧动画) ========= -->
+<div class="race-section">
+    <div class="race-card">
+        <div class="race-title">
+            <span>📊</span> 动态竞速图 · Bar Chart Race <span>🏁</span>
+        </div>
+        <div class="race-sub">
+            🎞️ 帧动画展示数据变化 | 拖动滑块 / 播放控制
+        </div>
+        <div class="animation">
+            <img id="_anim_img_race_unique" alt="Bar Chart Race Animation">
+            <div class="anim-controls">
+                <input id="_anim_slider_race_unique" type="range" class="anim-slider" name="points" min="0" max="1" step="1" value="0" 
+                       oninput="window.raceAnimInstance && raceAnimInstance.set_frame(parseInt(this.value));">
+                <div class="anim-buttons">
+                    <button title="减速" aria-label="Decrease speed" onclick="window.raceAnimInstance && raceAnimInstance.slower()">
+                        <i class="fa fa-minus"></i>
+                    </button>
+                    <button title="首帧" aria-label="First frame" onclick="window.raceAnimInstance && raceAnimInstance.first_frame()">
+                        <i class="fa fa-fast-backward"></i>
+                    </button>
+                    <button title="上一帧" aria-label="Previous frame" onclick="window.raceAnimInstance && raceAnimInstance.previous_frame()">
+                        <i class="fa fa-step-backward"></i>
+                    </button>
+                    <button title="倒放" aria-label="Play backwards" onclick="window.raceAnimInstance && raceAnimInstance.reverse_animation()">
+                        <i class="fa fa-play fa-flip-horizontal"></i>
+                    </button>
+                    <button title="暂停" aria-label="Pause" onclick="window.raceAnimInstance && raceAnimInstance.pause_animation()">
+                        <i class="fa fa-pause"></i>
+                    </button>
+                    <button title="播放" aria-label="Play" onclick="window.raceAnimInstance && raceAnimInstance.play_animation()">
+                        <i class="fa fa-play"></i>
+                    </button>
+                    <button title="下一帧" aria-label="Next frame" onclick="window.raceAnimInstance && raceAnimInstance.next_frame()">
+                        <i class="fa fa-step-forward"></i>
+                    </button>
+                    <button title="末帧" aria-label="Last frame" onclick="window.raceAnimInstance && raceAnimInstance.last_frame()">
+                        <i class="fa fa-fast-forward"></i>
+                    </button>
+                    <button title="加速" aria-label="Increase speed" onclick="window.raceAnimInstance && raceAnimInstance.faster()">
+                        <i class="fa fa-plus"></i>
+                    </button>
+                </div>
+                <form title="重复模式" action="#n" name="_anim_loop_select_race" class="anim-state">
+                    <input type="radio" name="state" value="once" id="_anim_radio_once_race">
+                    <label for="_anim_radio_once_race">Once</label>
+                    <input type="radio" name="state" value="loop" id="_anim_radio_loop_race" checked>
+                    <label for="_anim_radio_loop_race">Loop</label>
+                    <input type="radio" name="state" value="reflect" id="_anim_radio_reflect_race">
+                    <label for="_anim_radio_reflect_race">Reflect</label>
+                </form>
+            </div>
+        </div>
+        <p style="font-size:0.7rem; text-align:center; margin-top:14px; color:#b5a98e;">
+            ⚡ 依据词条演变 | 帧动画展示
+        </p>
     </div>
-    <form title="Repetition mode" aria-label="Repetition mode" action="#n" name="_anim_loop_select600002a7d6d541a9825b8efb3e495ea3"
-          class="anim-state">
-      <input type="radio" name="state" value="once" id="_anim_radio1_600002a7d6d541a9825b8efb3e495ea3"
-             >
-      <label for="_anim_radio1_600002a7d6d541a9825b8efb3e495ea3">Once</label>
-      <input type="radio" name="state" value="loop" id="_anim_radio2_600002a7d6d541a9825b8efb3e495ea3"
-             checked>
-      <label for="_anim_radio2_600002a7d6d541a9825b8efb3e495ea3">Loop</label>
-      <input type="radio" name="state" value="reflect" id="_anim_radio3_600002a7d6d541a9825b8efb3e495ea3"
-             >
-      <label for="_anim_radio3_600002a7d6d541a9825b8efb3e495ea3">Reflect</label>
-    </form>
-  </div>
 </div>
 
+<!-- ========= 2. 加密留言板 + 随机祝福彩蛋 ========= -->
+<div class="container">
+    <div class="header">
+        <span class="icon">💌</span>
+        <h1>加密留言板</h1>
+        <p class="subtitle">闻到先后，知道不知（<_<）✨ 无人留言时降落随机祝福</p>
+    </div>
 
-<script language="javascript">
-  /* Instantiate the Animation class. */
-  /* The IDs given should match those used in the template above. */
-  (function() {
-    var img_id = "_anim_img600002a7d6d541a9825b8efb3e495ea3";
-    var slider_id = "_anim_slider600002a7d6d541a9825b8efb3e495ea3";
-    var loop_select_id = "_anim_loop_select600002a7d6d541a9825b8efb3e495ea3";
-    var frames = new Array(991);
-    
-  for (var i=0; i<991; i++){
-    frames[i] = "bar_chart_race_frames/frame" + ("0000000" + i).slice(-7) +
-                ".png";
-  }
+    <div class="card">
+        <div class="tabs">
+            <button class="tab-btn active" data-panel="panel-query">🔍 查询密文</button>
+            <button class="tab-btn" data-panel="panel-write">✍️ 写留言</button>
+        </div>
 
+        <div class="panel active" id="panel-query">
+            <div class="form-group">
+                <label>🔑 输入你的真实姓名</label>
+                <input type="text" id="queryName" placeholder="查看发给你的加密留言..." autocomplete="off">
+            </div>
+            <button class="btn btn-primary" id="btnQuery">🔎 查看密文列表</button>
+            <div id="queryResult" class="result-area"></div>
+        </div>
 
-    /* set a timeout to make sure all the above elements are created before
-       the object is initialized. */
-    setTimeout(function() {
-        anim600002a7d6d541a9825b8efb3e495ea3 = new Animation(frames, img_id, slider_id, 50.0,
-                                 loop_select_id);
-    }, 0);
-  })()
+        <div class="panel" id="panel-write">
+            <div class="form-group">
+                <label>🧑 你的名字 (发送者)</label>
+                <input type="text" id="fromName" placeholder="你的真实姓名" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>🎯 接收者姓名</label>
+                <input type="text" id="toName" placeholder="对方的真实姓名" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>💬 留言内容</label>
+                <textarea id="messageContent" placeholder="写下你想对TA说的话..." maxlength="500"></textarea>
+                <div class="char-count"><span id="charCount">0</span>/500</div>
+            </div>
+            <button class="btn btn-primary" id="btnSend">🔒 生成密文并发送</button>
+            <div id="sendResult" class="result-area"></div>
+        </div>
+    </div>
+
+    <div class="card decrypt-card">
+        <h3 style="margin-bottom:16px; color:var(--accent); text-align:center;">🔐 解密工具</h3>
+        <p style="font-size:0.85rem; color:#6b6560; margin-bottom:16px; text-align:center;">
+            粘贴密文，输入双方姓名，还原留言内容
+        </p>
+        <div class="form-group">
+            <label>📋 密文</label>
+            <textarea id="decryptCipher" placeholder="粘贴加密后的字符串..." style="min-height:80px;"></textarea>
+        </div>
+        <div class="form-group">
+            <label>🧑 发送者姓名</label>
+            <input type="text" id="decryptFrom" placeholder="留言者的真实姓名" autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label>🎯 接收者姓名</label>
+            <input type="text" id="decryptTo" placeholder="你的真实姓名" autocomplete="off">
+        </div>
+        <button class="btn btn-primary" id="btnDecrypt">🔓 解密</button>
+        <div id="decryptResult" class="result-area"></div>
+    </div>
+
+    <p class="footer-note">
+        💡 提示：密文使用 <strong>发送者姓名 + 接收者姓名</strong> 生成密钥<br>
+        只有同时知道双方姓名才能解密，他人即使看到密文也无法破译。<br>
+        🎁 当没有专属留言也没有加密留言时，会掉落随机暖心祝福。
+    </p>
+</div>
+
+<script>
+    // ==================== 1. 竞速图动画逻辑 (完美保留) ====================
+    (function() {
+        function isInternetExplorer() {
+            var ua = navigator.userAgent;
+            return ua.indexOf("MSIE ") > -1 || ua.indexOf("Trident/") > -1;
+        }
+        function Animation(frames, img_id, slider_id, interval, loop_select_id){
+            this.img_id = img_id;
+            this.slider_id = slider_id;
+            this.loop_select_id = loop_select_id;
+            this.interval = interval;
+            this.current_frame = 0;
+            this.direction = 0;
+            this.timer = null;
+            this.frames = new Array(frames.length);
+            for (var i=0; i<frames.length; i++) {
+                this.frames[i] = new Image();
+                this.frames[i].src = frames[i];
+            }
+            var slider = document.getElementById(this.slider_id);
+            if(slider) slider.max = this.frames.length - 1;
+            if (isInternetExplorer() && slider) {
+                slider.setAttribute('onchange', slider.getAttribute('oninput'));
+                slider.setAttribute('oninput', null);
+            }
+            this.set_frame(this.current_frame);
+        }
+        Animation.prototype.get_loop_state = function(){
+            var button_group = document[this.loop_select_id].state;
+            if(!button_group) return "loop";
+            for (var i = 0; i < button_group.length; i++) {
+                if (button_group[i].checked) return button_group[i].value;
+            }
+            return "loop";
+        };
+        Animation.prototype.set_frame = function(frame){
+            this.current_frame = frame;
+            var imgElem = document.getElementById(this.img_id);
+            if(imgElem) imgElem.src = this.frames[this.current_frame].src;
+            var sliderElem = document.getElementById(this.slider_id);
+            if(sliderElem) sliderElem.value = this.current_frame;
+        };
+        Animation.prototype.next_frame = function(){ this.set_frame(Math.min(this.frames.length - 1, this.current_frame + 1)); };
+        Animation.prototype.previous_frame = function(){ this.set_frame(Math.max(0, this.current_frame - 1)); };
+        Animation.prototype.first_frame = function(){ this.set_frame(0); };
+        Animation.prototype.last_frame = function(){ this.set_frame(this.frames.length - 1); };
+        Animation.prototype.slower = function(){ this.interval /= 0.7; if(this.direction > 0) this.play_animation(); else if(this.direction < 0) this.reverse_animation(); };
+        Animation.prototype.faster = function(){ this.interval *= 0.7; if(this.direction > 0) this.play_animation(); else if(this.direction < 0) this.reverse_animation(); };
+        Animation.prototype.anim_step_forward = function(){
+            this.current_frame += 1;
+            if(this.current_frame < this.frames.length){
+                this.set_frame(this.current_frame);
+            }else{
+                var loop_state = this.get_loop_state();
+                if(loop_state == "loop"){ this.first_frame(); }
+                else if(loop_state == "reflect"){ this.last_frame(); this.reverse_animation(); }
+                else{ this.pause_animation(); this.last_frame(); }
+            }
+        };
+        Animation.prototype.anim_step_reverse = function(){
+            this.current_frame -= 1;
+            if(this.current_frame >= 0){
+                this.set_frame(this.current_frame);
+            }else{
+                var loop_state = this.get_loop_state();
+                if(loop_state == "loop"){ this.last_frame(); }
+                else if(loop_state == "reflect"){ this.first_frame(); this.play_animation(); }
+                else{ this.pause_animation(); this.first_frame(); }
+            }
+        };
+        Animation.prototype.pause_animation = function(){
+            this.direction = 0;
+            if(this.timer){ clearInterval(this.timer); this.timer = null; }
+        };
+        Animation.prototype.play_animation = function(){
+            this.pause_animation();
+            this.direction = 1;
+            var t = this;
+            if (!this.timer) this.timer = setInterval(function() { t.anim_step_forward(); }, this.interval);
+        };
+        Animation.prototype.reverse_animation = function(){
+            this.pause_animation();
+            this.direction = -1;
+            var t = this;
+            if (!this.timer) this.timer = setInterval(function() { t.anim_step_reverse(); }, this.interval);
+        };
+
+        var frames = new Array(991);
+        for (var i=0; i<991; i++){
+            frames[i] = "bar_chart_race_frames/frame" + ("0000000" + i).slice(-7) + ".png";
+        }
+        var img_id = "_anim_img_race_unique";
+        var slider_id = "_anim_slider_race_unique";
+        var loop_select_id = "_anim_loop_select_race";
+        setTimeout(function() {
+            window.raceAnimInstance = new Animation(frames, img_id, slider_id, 50.0, loop_select_id);
+        }, 0);
+    })();
+
+    // ==================== 2. 加密留言板 + 随机祝福模块 ====================
+    (function() {
+        const PRESET_MESSAGES = {
+            "张三": "🎉 亲爱的张三，欢迎来到这个秘密角落！",
+            "李四": "🌟 李四你好呀！这是为你准备的专属留言。",
+            "王五": "💎 王五，恭喜你发现了隐藏的宝藏留言！",
+            "赵六": "🌈 嘿赵六！这份专属留言穿越人海找到你。",
+            "小明": "🦄 小明！你找到了属于你的魔法留言！"
+        };
+        const STORAGE_KEY = 'enc_msg_board_v5_fixed';
+
+        // ----- 随机祝福库 (温馨治愈系) -----
+        function getRandomBlessing() {
+            const blessings = [
+                "✨ 愿你今天拥有好心情，生活里处处有惊喜。",
+                "🌸 世界很大，温暖常在，祝你被世界温柔以待。",
+                "🌼 没有留言也没关系，送你一朵小花，记得微笑。",
+                "🌟 星光不问赶路人，时光不负有心人，加油！",
+                "🍃 把烦恼丢掉，腾出地方装鲜花和快乐。",
+                "🍀 幸运正朝着你的方向赶来，请耐心等待。",
+                "💫 今天也是值得被爱的一天，愿你自在如风。",
+                "🌈 每一件小事都值得庆祝，祝你开心每一天！",
+                "⭐ 愿你心中的梦想如星辰般闪亮。",
+                "🕊️ 宁静致远，心之所向，无问西东。",
+                "📖 每一个没有留言的日子，也藏着温柔的诗。",
+                "🎈 放轻松，宇宙偷偷给你准备了好多份惊喜。",
+                "🍵 一杯暖茶，一缕清风，愿你心安。",
+                "🕯️ 即使没有密语，你也值得一切美好。"
+            ];
+            return blessings[Math.floor(Math.random() * blessings.length)];
+        }
+
+        function textToCodePoints(text) {
+            return Array.from(text).map(ch => ch.codePointAt(0).toString(16)).join(' ');
+        }
+        function codePointsToText(codeStr) {
+            try { return codeStr.split(' ').map(hex => String.fromCodePoint(parseInt(hex,16))).join(''); }
+            catch(e) { return ''; }
+        }
+        function generateKeyBytes(from, to) {
+            return new TextEncoder().encode(from + '::' + to);
+        }
+        function encryptMessage(plaintext, from, to) {
+            if(!plaintext || !from || !to) return '';
+            const codeStr = textToCodePoints(plaintext);
+            const codeBytes = new TextEncoder().encode(codeStr);
+            const keyBytes = generateKeyBytes(from, to);
+            const encrypted = new Uint8Array(codeBytes.length);
+            for(let i=0; i<codeBytes.length; i++) encrypted[i] = codeBytes[i] ^ keyBytes[i % keyBytes.length];
+            return btoa(String.fromCharCode(...encrypted));
+        }
+        function decryptMessage(cipherBase64, from, to) {
+            if(!cipherBase64 || !from || !to) return { success:false, text:'' };
+            try {
+                const encryptedStr = atob(cipherBase64);
+                const encryptedBytes = new Uint8Array(encryptedStr.length);
+                for(let i=0; i<encryptedStr.length; i++) encryptedBytes[i] = encryptedStr.charCodeAt(i);
+                const keyBytes = generateKeyBytes(from, to);
+                const decryptedBytes = new Uint8Array(encryptedBytes.length);
+                for(let i=0; i<encryptedBytes.length; i++) decryptedBytes[i] = encryptedBytes[i] ^ keyBytes[i % keyBytes.length];
+                const codeStr = new TextDecoder().decode(decryptedBytes);
+                const text = codePointsToText(codeStr);
+                return { success: true, text };
+            } catch(e) { return { success:false, text:'' }; }
+        }
+
+        function getAllMessages() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { return []; }
+        }
+        function saveMessage(msg) {
+            const msgs = getAllMessages(); msgs.push(msg);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs));
+            return true;
+        }
+        function getMessagesForRecipient(name) {
+            return getAllMessages().filter(m => m.to === name);
+        }
+
+        function maskName(name) {
+            if(!name) return '匿名';
+            const len = name.length;
+            if(len===1) return name+'*';
+            if(len===2) return name[0]+'*';
+            return name[0]+'*'+name[len-1];
+        }
+
+        function showToast(msg, type='') {
+            const t = document.getElementById('toast');
+            if(!t) return;
+            t.textContent = msg; t.className = 'toast '+type+' show';
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.classList.remove('show'), 2500);
+        }
+        function escapeHtml(str) {
+            const d = document.createElement('div'); d.textContent = str; return d.innerHTML;
+        }
+        function generateId() {
+            return 'msg_'+Date.now()+'_'+Math.random().toString(36).substring(2,9);
+        }
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => showToast('📋 密文已复制', 'success'))
+            .catch(() => showToast('复制失败，请手动复制', 'error'));
+        }
+
+        // 标签切换
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                document.getElementById(btn.dataset.panel).classList.add('active');
+                document.getElementById('queryResult').innerHTML = '';
+                document.getElementById('sendResult').innerHTML = '';
+            });
+        });
+
+        const msgContent = document.getElementById('messageContent');
+        const charCount = document.getElementById('charCount');
+        if(msgContent && charCount) {
+            msgContent.addEventListener('input', () => {
+                const len = msgContent.value.length;
+                charCount.textContent = len;
+                charCount.style.color = len > 450 ? '#c0846a' : '#6b6560';
+            });
+        }
+
+        // 核心查询函数 ———— 增加随机祝福彩蛋
+        function queryMessages() {
+            const name = document.getElementById('queryName').value.trim();
+            const resultDiv = document.getElementById('queryResult');
+            if(!name) { resultDiv.innerHTML = '<div class="no-result"><span class="emoji">🤔</span><p>请输入姓名</p></div>'; return; }
+            let html = '';
+            let hasPreset = false;
+            if(PRESET_MESSAGES[name]) {
+                hasPreset = true;
+                html += `<div class="result-card preset"><div class="msg-content">${escapeHtml(PRESET_MESSAGES[name])}</div></div>`;
+            }
+            const msgs = getMessagesForRecipient(name);
+            if(msgs.length > 0) {
+                html += `<p style="font-weight:600; margin:12px 0 8px;">🔒 共 ${msgs.length} 条加密留言</p>`;
+                msgs.sort((a,b) => b.timestamp - a.timestamp);
+                for(const msg of msgs) {
+                    const timeStr = new Date(msg.timestamp).toLocaleString('zh-CN');
+                    const safeCipher = encodeURIComponent(msg.encryptedContent);
+                    html += `
+                    <div class="result-card user-message">
+                        <div class="msg-from">📨 来自 <strong>${escapeHtml(maskName(msg.from))}</strong></div>
+                        <div class="cipher-text">${escapeHtml(msg.encryptedContent)}</div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px;">
+                            <span class="msg-time">🕐 ${timeStr}</span>
+                            <button class="copy-btn copy-cipher-btn" data-cipher="${safeCipher}">📋 复制密文</button>
+                        </div>
+                        <div style="font-size:0.75rem; color:#b5afa8; margin-top:4px;">💡 复制密文到下方解密工具，需双方全名解密</div>
+                    </div>`;
+                }
+            } 
+            // 核心改动: 无预设留言 && 无任何加密留言 -> 展示随机祝福
+            if(!hasPreset && msgs.length === 0) {
+                const blessing = getRandomBlessing();
+                html += `
+                    <div class="no-result" style="padding: 24px 20px; background: #fefaf5;">
+                        <span class="emoji">🎁✨</span>
+                        <p style="font-size:1.05rem; font-weight:500; margin: 10px 0 6px; color: #b8936e;">✦ 随机祝福降落 ✦</p>
+                        <p style="font-size:1rem; line-height:1.5; color: var(--text);">${escapeHtml(blessing)}</p>
+                        <p style="margin-top:16px; font-size:0.8rem; color: #a6907a;">💌 暂时没有加密留言，不妨写一条悄悄话送给别人～</p>
+                    </div>`;
+            } else if(!hasPreset && msgs.length === 0) {
+                // 理论上不会走到这里，但保留兜底
+                const blessing = getRandomBlessing();
+                html += `<div class="no-result"><span class="emoji">🌸</span><p>${escapeHtml(blessing)}</p></div>`;
+            }
+            resultDiv.innerHTML = html;
+            if(msgs.length>0) showToast(`找到 ${msgs.length} 条加密留言`, 'success');
+            if(!hasPreset && msgs.length===0 && name) showToast('💫 为你送上一句随机祝福', 'success');
+        }
+
+        document.getElementById('queryResult')?.addEventListener('click', function(e) {
+            const btn = e.target.closest('.copy-cipher-btn');
+            if(!btn) return;
+            const encoded = btn.getAttribute('data-cipher');
+            if(encoded) copyToClipboard(decodeURIComponent(encoded));
+        });
+        document.getElementById('btnQuery')?.addEventListener('click', queryMessages);
+        document.getElementById('queryName')?.addEventListener('keydown', e => { if(e.key==='Enter') queryMessages(); });
+
+        function sendMessage() {
+            const from = document.getElementById('fromName').value.trim();
+            const to = document.getElementById('toName').value.trim();
+            const content = msgContent?.value.trim() || '';
+            const resultDiv = document.getElementById('sendResult');
+            if(!from) { showToast('请填写你的名字','error'); return; }
+            if(!to) { showToast('请填写接收者姓名','error'); return; }
+            if(!content) { showToast('请填写留言内容','error'); return; }
+            if(from===to) { showToast('不能给自己留言','error'); return; }
+            if(content.length>500) { showToast('留言不能超过500字','error'); return; }
+            const cipher = encryptMessage(content, from, to);
+            if(!cipher) { showToast('加密失败','error'); return; }
+            const msgObj = { id:generateId(), from, to, encryptedContent: cipher, timestamp: Date.now() };
+            saveMessage(msgObj);
+            if(resultDiv) resultDiv.innerHTML = `
+            <div class="result-card user-message" style="border-left-color:#7aaa7a; background:#f8fdf8;">
+                <div style="text-align:center;">
+                    <span style="font-size:2rem;">✅</span>
+                    <p style="font-weight:600; margin:8px 0;">密文已生成并发送！</p>
+                    <div class="cipher-text" style="text-align:left; margin:10px 0;">${escapeHtml(cipher)}</div>
+                    <p style="font-size:0.85rem;">接收者 <strong>${escapeHtml(to)}</strong> 输入自己姓名即可在查询面板看到此密文</p>
+                    <p style="font-size:0.75rem; color:#6b6560;">解密需要双方姓名：<strong>${escapeHtml(from)}</strong> + <strong>${escapeHtml(to)}</strong></p>
+                </div>
+            </div>`;
+            showToast('✅ 密文发送成功','success');
+            if(document.getElementById('fromName')) document.getElementById('fromName').value = '';
+            if(document.getElementById('toName')) document.getElementById('toName').value = '';
+            if(msgContent) msgContent.value = '';
+            if(charCount) charCount.textContent = '0';
+            if(resultDiv) resultDiv.scrollIntoView({ behavior:'smooth', block:'nearest' });
+        }
+        document.getElementById('btnSend')?.addEventListener('click', sendMessage);
+
+        function decryptAction() {
+            const cipher = document.getElementById('decryptCipher')?.value.trim() || '';
+            const from = document.getElementById('decryptFrom')?.value.trim() || '';
+            const to = document.getElementById('decryptTo')?.value.trim() || '';
+            const resultDiv = document.getElementById('decryptResult');
+            if(!cipher || !from || !to) {
+                if(resultDiv) resultDiv.innerHTML = '<p style="color:#b85450;">请填写密文、发送者姓名和接收者姓名</p>';
+                return;
+            }
+            const res = decryptMessage(cipher, from, to);
+            if(resultDiv) {
+                if(res.success) {
+                    resultDiv.innerHTML = `<div class="result-card" style="border-left-color:#5b8a6f; background:#f4faf6;"><p style="font-weight:600;">🔓 解密成功：</p><div style="margin-top:8px; font-size:1.05rem; line-height:1.7;">${escapeHtml(res.text)}</div></div>`;
+                    showToast('✅ 解密成功','success');
+                } else {
+                    resultDiv.innerHTML = '<p style="color:#b85450;">❌ 解密失败，请检查密文或双方姓名是否正确</p>';
+                    showToast('解密失败','error');
+                }
+            }
+        }
+        document.getElementById('btnDecrypt')?.addEventListener('click', decryptAction);
+        if(document.getElementById('queryName')) document.getElementById('queryName').focus();
+    })();
 </script>
+</body>
+</html>
