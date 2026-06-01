@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>竞速图展示</title>
+    <title>动态竞速图 - 优雅界面</title>
     <!-- Font Awesome 4.4 图标库 -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
     <style>
-        /* 全局重置，让背景canvas完全透出 */
+        /* 全局重置 */
         * {
             margin: 0;
             padding: 0;
@@ -21,23 +21,23 @@
             font-family: system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
         }
 
-        /* 主容器：弹性布局，内容置中，无额外背景遮挡粒子 */
+        /* 静态背景：保留原有粒子的背景色渐变，但无运动 */
         body {
+            background: radial-gradient(circle at 30% 40%, #eef2ff, #e2e8f0);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 24px 20px;
             position: relative;
-            z-index: 1;
         }
 
-        /* 动画卡片：降低背景不透明度，让背景粒子明显透出，并保留半透玻璃效果 */
+        /* 动画卡片：半透玻璃质感，与之前UI完全一致 */
         .animation {
             display: inline-block;
             text-align: center;
-            background: rgba(255, 255, 255, 0.55);   /* 提升透明度，明显看到背后粒子 */
-            backdrop-filter: blur(6px);              /* 轻微模糊增加可读性，同时透出粒子 */
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(6px);
             border-radius: 40px;
             padding: 20px 28px 24px 28px;
             box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.4);
@@ -63,7 +63,7 @@
             }
         }
 
-        /* 滑块样式保持 */
+        /* 滑块样式 */
         input[type=range].anim-slider {
             width: 400px;
             margin: 8px auto;
@@ -95,7 +95,7 @@
         .anim-buttons button:active {
             transform: scale(0.96);
         }
-        /* 播放模式选项背景半透明 */
+        /* 播放模式选项 */
         .anim-state {
             background: rgba(241, 245, 249, 0.7);
             padding: 6px 16px;
@@ -115,7 +115,7 @@
             vertical-align: middle;
             accent-color: #3b82f6;
         }
-        /* 图片容器及图片本身：增加轻微透明度，使背景粒子能透过来，同时保持图像辨识度 */
+        /* 图片容器及图片本身：轻微透明，保持与之前一致 */
         .img-wrapper {
             display: inline-block;
             border-radius: 24px;
@@ -128,33 +128,15 @@
             max-width: 100%;
             height: auto;
             border-radius: 24px;
-            opacity: 0.88;          /* 轻微透明，凸显背景粒子律动 */
+            opacity: 0.88;
             background: transparent;
             transition: opacity 0.2s;
         }
-        /* 可选: 图片悬停时稍微不透明，提升交互 (可选) */
         img:hover {
             opacity: 0.96;
         }
         
-        /* 粒子canvas背景层: 放射渐变，增强视觉深度 */
-        #particle-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: block;
-            pointer-events: none;
-            z-index: 0;
-            background: radial-gradient(circle at 30% 40%, #eef2ff, #e2e8f0);
-        }
-        /* 保证所有交互内容在canvas之上 */
-        body > *:not(#particle-canvas) {
-            position: relative;
-            z-index: 2;
-        }
-        /* 当序列帧缺失时的友好提示 (保留但不影响主要体验) */
+        /* 图片加载失败提示（美观，不影响功能） */
         .img-fallback-note {
             font-size: 12px;
             color: #475569;
@@ -172,7 +154,6 @@
     <div class="img-wrapper">
         <img id="_anim_img600002a7d6d541a9825b8efb3e495ea3" alt="动态条形图序列帧" onerror="handleImageError(this)">
     </div>
-    <!-- 已移除帧数显示模块：符合“不要显示当前帧”的需求 -->
     
     <div class="anim-controls">
         <input id="_anim_slider600002a7d6d541a9825b8efb3e495ea3" type="range" class="anim-slider"
@@ -210,10 +191,8 @@
     </div>
 </div>
 
-<canvas id="particle-canvas"></canvas>
-
 <script>
-    // ======================== 动画核心 (完整保留，无帧计数器干扰) ========================
+    // ======================== 动画核心 (完整保留，无粒子干扰) ========================
     function isInternetExplorer() {
         let ua = navigator.userAgent;
         return ua.indexOf("MSIE ") > -1 || ua.indexOf("Trident/") > -1;
@@ -233,14 +212,13 @@
         for (var i=0; i<frames.length; i++) {
             this.frames[i] = new Image();
             this.frames[i].src = frames[i];
-            // 静默处理加载错误，避免控制台嘈杂但保留用户提示
+            // 静默处理加载错误
             this.frames[i].onerror = (function(idx) {
                 return function() { 
                     if (idx === 0 && document.getElementById(img_id)) {
                         let imgEl = document.getElementById(img_id);
                         if (!imgEl.hasAttribute('data-error-shown')) {
                             imgEl.setAttribute('data-error-shown', 'true');
-                            // 轻柔提示
                         }
                     }
                 };
@@ -272,7 +250,6 @@
         }
         var slider = document.getElementById(this.slider_id);
         if(slider) slider.value = this.current_frame;
-        // 已完全移除帧文本显示
     }
 
     Animation.prototype.next_frame = function() {
@@ -361,7 +338,7 @@
         if (!this.timer) this.timer = setInterval(function() { t.anim_step_reverse(); }, this.interval);
     }
 
-    // 图片加载失败的友好处理（仅作为辅助，不影响动画播放）
+    // 图片加载失败的友好提示（仅辅助）
     window.handleImageError = function(img) {
         if(img && !img.hasAttribute('data-fallback')) {
             img.setAttribute('data-fallback', 'true');
@@ -378,7 +355,7 @@
         }
     };
 
-    // 实例化动画（991帧图片序列，与原始需求完全一致）
+    // 实例化动画（991帧图片序列，完全保留原始逻辑）
     (function() {
         var img_id = "_anim_img600002a7d6d541a9825b8efb3e495ea3";
         var slider_id = "_anim_slider600002a7d6d541a9825b8efb3e495ea3";
@@ -391,190 +368,6 @@
             window.anim600002a7d6d541a9825b8efb3e495ea3 = new Animation(frames, img_id, slider_id, 50.0, loop_select_id);
         }, 0);
     })();
-
-    // ======================== 慢速规律粒子系统 (舒缓圆周运动, 速度较慢) ========================
-    (function() {
-        const canvas = document.getElementById('particle-canvas');
-        if (!canvas) return;
-        let ctx = canvas.getContext('2d');
-        let particles = [];
-        let particleCount = 420;        // 粒子数量适中，性能友好且视觉饱满
-        
-        let centerX = 0, centerY = 0;
-        let maxRadius = 0;
-        
-        // 核心：极慢的基础角速度 0.2 弧度/秒 (转一圈约 31.4 秒)，满足“粒子运动慢一点”
-        const BASE_ANGULAR_SPEED = 0.20;   // 舒适慵懒的旋转
-        let previousTimestamp = null;
-        
-        class Particle {
-            constructor(radius, angle, speedFactor, size, color) {
-                this.radius = radius;
-                this.angle = angle;
-                this.speedFactor = speedFactor;   // 系数范围0.6~1.2，产生规律性差速但不破坏视觉节奏
-                this.size = size;
-                this.color = color;
-            }
-        }
-        
-        function initParticles() {
-            if (!canvas) return;
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            canvas.width = w;
-            canvas.height = h;
-            centerX = w / 2;
-            centerY = h / 2;
-            maxRadius = Math.min(w, h) * 0.58;
-            const minRadius = 32;
-            
-            particles = [];
-            const colorPalette = [
-                'rgba(59, 130, 246, 0.5)',   // 柔和蓝
-                'rgba(139, 92, 246, 0.5)',   // 淡紫
-                'rgba(236, 72, 153, 0.45)',  
-                'rgba(6, 182, 212, 0.5)',    
-                'rgba(168, 85, 247, 0.45)',
-                'rgba(34, 197, 94, 0.45)',   
-                'rgba(251, 146, 60, 0.45)',
-                'rgba(100, 116, 139, 0.55)'
-            ];
-            
-            for (let i = 0; i < particleCount; i++) {
-                const t = Math.random();
-                // 半径分布均匀并向外延展，视觉更舒展
-                let radius = minRadius + (maxRadius - minRadius) * Math.pow(t, 1.05);
-                const initAngle = Math.random() * Math.PI * 2;
-                // 速度系数：外圈慢内圈稍快，整体保持规整的圆周运动差速效果
-                let speedFactor = 1.08 - (radius - minRadius) / (maxRadius - minRadius) * 0.58;
-                speedFactor = Math.min(1.18, Math.max(0.62, speedFactor));
-                speedFactor += (Math.random() - 0.5) * 0.06;  // 微小扰动，依然高度规律
-                
-                const size = 1.7 + (radius / maxRadius) * 2.6;
-                let colorIdx = Math.floor((radius / maxRadius) * colorPalette.length) % colorPalette.length;
-                let color = colorPalette[colorIdx];
-                // 微调透明度层次
-                color = color.replace(/[\d\.]+\)$/g, (match) => {
-                    let op = parseFloat(match);
-                    op = Math.min(0.68, Math.max(0.38, op + (Math.random() - 0.5) * 0.1));
-                    return op + ")";
-                });
-                particles.push(new Particle(radius, initAngle, speedFactor, size, color));
-            }
-            // 增加一批更微小的星尘，增强繁星感
-            for (let i=0; i<150; i++) {
-                let radius = minRadius + (maxRadius - minRadius) * Math.random();
-                let angle = Math.random() * Math.PI * 2;
-                let speedFactor = 0.75 + Math.random() * 0.5;
-                let size = 1.0 + Math.random() * 1.2;
-                let color = `rgba(148, 163, 184, ${0.4 + Math.random() * 0.3})`;
-                particles.push(new Particle(radius, angle, speedFactor, size, color));
-            }
-            // 随机打乱顺序让视觉融合更好
-            for (let i = particles.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [particles[i], particles[j]] = [particles[j], particles[i]];
-            }
-        }
-        
-        // 基于时间差更新角度：恒定角速度规律运动
-        function updateAngles(nowMs) {
-            if (!previousTimestamp) {
-                previousTimestamp = nowMs;
-                return;
-            }
-            let deltaSec = Math.min(0.033, (nowMs - previousTimestamp) / 1000);
-            if (deltaSec <= 0) return;
-            const deltaAngleBase = BASE_ANGULAR_SPEED * deltaSec;  // 极慢增量
-            for (let p of particles) {
-                p.angle += deltaAngleBase * p.speedFactor;
-                if (p.angle > Math.PI * 2) p.angle -= Math.PI * 2;
-                if (p.angle < 0) p.angle += Math.PI * 2;
-            }
-            previousTimestamp = nowMs;
-        }
-        
-        function draw() {
-            if (!ctx) return;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // 绘制所有粒子: 圆形光晕感
-            for (let p of particles) {
-                const x = centerX + Math.cos(p.angle) * p.radius;
-                const y = centerY + Math.sin(p.angle) * p.radius;
-                if (x + p.size < -20 || x - p.size > canvas.width + 20 || y + p.size < -20 || y - p.size > canvas.height + 20) continue;
-                ctx.beginPath();
-                ctx.arc(x, y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = p.color;
-                ctx.fill();
-                // 添加内发光点
-                ctx.beginPath();
-                ctx.arc(x - 0.5, y - 0.5, p.size * 0.3, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255, 250, 210, 0.6)';
-                ctx.fill();
-            }
-            // 绘制极淡的装饰同心环，强化规律性视觉效果 (但不干扰主体)
-            ctx.save();
-            ctx.globalAlpha = 0.18;
-            ctx.setLineDash([4, 12]);
-            for (let r = 1; r <= 3; r++) {
-                const ringRadius = (maxRadius * r) / 3.2;
-                if (ringRadius < 45) continue;
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
-                ctx.strokeStyle = '#475569';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-            }
-            ctx.setLineDash([]);
-            ctx.globalAlpha = 1.0;
-            // 中心柔和光晕 (淡雅)
-            ctx.beginPath();
-            const grad = ctx.createRadialGradient(centerX, centerY, 5, centerX, centerY, 60);
-            grad.addColorStop(0, 'rgba(100, 116, 139, 0.2)');
-            grad.addColorStop(1, 'rgba(100, 116, 139, 0)');
-            ctx.fillStyle = grad;
-            ctx.arc(centerX, centerY, 70, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        }
-        
-        let animFrameId = null;
-        function animateParticles(timestamp) {
-            updateAngles(timestamp);
-            draw();
-            animFrameId = requestAnimationFrame(animateParticles);
-        }
-        
-        function onResize() {
-            if (!canvas) return;
-            initParticles();
-            previousTimestamp = null;
-            draw();
-        }
-        
-        function startParticleBackground() {
-            if (!canvas) return;
-            ctx = canvas.getContext('2d');
-            initParticles();
-            draw();
-            previousTimestamp = null;
-            animFrameId = requestAnimationFrame(animateParticles);
-            window.addEventListener('resize', onResize);
-        }
-        
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', startParticleBackground);
-        } else {
-            startParticleBackground();
-        }
-        
-        window.addEventListener('beforeunload', () => {
-            if (animFrameId) cancelAnimationFrame(animFrameId);
-            window.removeEventListener('resize', onResize);
-        });
-    })();
-    
-    // 确保动画实例初始化后无帧数显示 (不需要额外操作，因为DOM中已移除相关元素)
 </script>
 </body>
 </html>
